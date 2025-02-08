@@ -9,6 +9,8 @@ from collections import Counter
 import re
 import time
 from webdriver_manager.chrome import ChromeDriverManager
+import platform
+import os
 
 class ReviewAnalyzer:
     def __init__(self):
@@ -31,6 +33,12 @@ class ReviewAnalyzer:
 
     def get_reviews(self, product_id, max_pages=10, progress_callback=None):
         try:
+            # Linux 환경에서 Chrome 설치
+            if platform.system() == "Linux":
+                self.chrome_options.binary_location = "/usr/bin/chromium"
+                self.chrome_options.add_argument("--no-sandbox")
+                self.chrome_options.add_argument("--disable-dev-shm-usage")
+
             print(f"상품 ID {product_id}의 리뷰 수집 시작")
             print(f"요청된 최대 페이지 수: {max_pages}")  # 디버깅 로그
             driver = webdriver.Chrome(
