@@ -1,5 +1,1 @@
-chromium
-chromium-driver
-xvfb
-wget
-chromium-chromedriver 
+google-chrome-stable 
