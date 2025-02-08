@@ -399,7 +399,6 @@ class ReviewAnalyzer:
             return None
 
     def analyze_reviews(self, reviews):
-        print("Analyzing reviews:", len(reviews))  # 디버깅 로그
         try:
             # 평점 분포 계산
             rating_dist = {str(i): 0 for i in range(1, 6)}
@@ -408,60 +407,47 @@ class ReviewAnalyzer:
                 if rating in rating_dist:
                     rating_dist[rating] += 1
             
-            print("Rating distribution:", rating_dist)  # 디버깅 로그
-            
-            # 리뷰 트렌드 분석
-            review_trends = {'dates': [], 'counts': []}
-            try:
-                df = pd.DataFrame(reviews)
-                df['date'] = pd.to_datetime(df['date'])
-                daily_counts = df.groupby(df['date'].dt.date).size()
-                review_trends = {
-                    'dates': [str(date) for date in daily_counts.index],
-                    'counts': [int(count) for count in daily_counts.values]
-                }
-            except Exception as e:
-                print(f"리뷰 트렌드 분석 중 오류: {str(e)}")
-            
             # 키워드 분석
-            keywords = []
+            word_counts = Counter()
             try:
-                words = []
                 for review in reviews:
                     content = str(review.get('content', ''))
                     # 한글 단어만 추출 (2글자 이상)
                     korean_words = re.findall(r'[가-힣]{2,}', content)
-                    words.extend(korean_words)
-                
-                # 불용어 설정
-                stop_words = ['있는', '없는', '같은', '이런', '저런', '그런', '이거', '저거', '그거']
-                
-                # 유효한 단어만 필터링
-                valid_words = [word for word in words if word not in stop_words]
-                
-                # 키워드 카운트
-                keyword_counts = Counter(valid_words)
-                
-                # 상위 10개 키워드 선택
+                    
+                    # 불용어 설정
+                    stop_words = {'있는', '없는', '같은', '이런', '저런', '그런', '이거', '저거', '그거',
+                                '정말', '너무', '진짜', '아주', '완전', '매우', '정도', '약간', '조금'}
+                    
+                    # 유효한 단어만 카운트
+                    for word in korean_words:
+                        if word not in stop_words and len(word) >= 2:
+                            word_counts[word] += 1
+                    
+                # 상위 20개 키워드 선택
                 keywords = [
                     {'word': word, 'count': count}
-                    for word, count in keyword_counts.most_common(10)
+                    for word, count in word_counts.most_common(20)
+                    if count >= 2  # 최소 2번 이상 등장한 키워드만 선택
                 ]
+
+                print(f"키워드 분석 완료: {len(keywords)}개 키워드 추출")  # 디버깅
+                for kw in keywords[:5]:  # 상위 5개 키워드 출력
+                    print(f"- {kw['word']}: {kw['count']}회")
+
             except Exception as e:
                 print(f"키워드 분석 중 오류: {str(e)}")
+                keywords = []  # 오류 발생 시 빈 리스트 반환
             
             # 평균 평점 계산
             total_rating = sum(int(k) * v for k, v in rating_dist.items())
             total_reviews = sum(rating_dist.values())
             avg_rating = total_rating / total_reviews if total_reviews > 0 else 0
             
-            print("Average rating:", avg_rating)  # 디버깅 로그
-            
             return {
                 'totalReviews': total_reviews,
                 'averageRating': avg_rating,
                 'ratingDistribution': rating_dist,
-                'reviewTrends': review_trends,
                 'keywords': keywords
             }
             
