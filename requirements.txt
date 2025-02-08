@@ -16,8 +16,8 @@ requests==2.31.0
 beautifulsoup4==4.12.0
 
 # 기타 (필요한 경우)
-# selenium==4.1.0
-# webdriver_manager==3.8.0
+selenium==4.1.0
+webdriver_manager==3.8.0
 # flask==2.3.3
 # flask-cors==3.0.10
 python-dateutil==2.9.0
