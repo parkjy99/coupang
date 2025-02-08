@@ -1,6 +1,5 @@
-# Streamlit
-streamlit==1.30.2 #Streamlit 최신 버전
-# streamlit==1.22.0 #기존 Streamlit 버전 (호환성 문제가 발생할 경우 사용)
+# Streamlit (Python 3.12 호환 버전)
+streamlit==1.29.0
 
 # 데이터 처리
 pandas==2.2.0
