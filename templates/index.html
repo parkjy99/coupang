@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쿠팡 리뷰 분석기ver1.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary-color: #FFB5C2;  /* 파스텔 핑크 */
+            --secondary-color: #B5E5FF; /* 파스텔 블루 */
+            --accent-color: #FFE5B5;   /* 파스텔 옐로우 */
+            --background-color: #FFF5F7; /* 연한 핑크 배경 */
+            --text-color: #6B7280;     /* 부드러운 회색 텍스트 */
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4A5568;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            max-width: 600px;
+            padding: 1rem;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--secondary-color);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #FF9AAE;
+        }
+
+        .loading {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--secondary-color);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            flex: 1;
+            max-width: 200px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-box h3 {
+            color: #4A5568;
+            margin-bottom: 1rem;
+        }
+
+        .stat-box p {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .chart-container {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-box {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            flex: 1;
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-box h3 {
+            color: #4A5568;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .keyword-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .keyword-container h3 {
+            color: #4A5568;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        #keywordCloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .keyword-tag {
+            background-color: var(--accent-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #4A5568;
+            transition: transform 0.3s;
+        }
+
+        .keyword-tag:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .stats-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stat-box {
+                width: 100%;
+            }
+
+            .chart-container {
+                flex-direction: column;
+            }
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-select {
+            padding: 0.8rem;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            width: 120px;
+            background-color: white;
+            cursor: pointer;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .page-select:focus {
+            outline: none;
+            border-color: #FF8B3D;
+            box-shadow: 0 0 0 2px rgba(255,155,80,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>쿠팡 리뷰 분석기</h1>
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="쿠팡 상품 URL을 입력하세요">
+            <select id="pageInput" class="page-select">
+                <option value="5" selected>5페이지</option>
+                <option value="10">10페이지</option>
+                <option value="20">20페이지</option>
+                <option value="30">30페이지</option>
+                <option value="50">50페이지</option>
+                <option value="100">100페이지</option>
+                <option value="1000">1000페이지</option>
+            </select>
+            <button id="analyzeBtn">분석하기</button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>리뷰를 분석하고 있습니다...</p>
+            <p id="progressText">0 / 0 페이지 완료</p>
+        </div>
+
+        <div id="results" class="hidden">
+            <div class="product-info">
+                <h2 id="productTitle">상품명</h2>
+            </div>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <h3>총 리뷰 수</h3>
+                    <p class="sub-text">추출 <span id="totalReviews">0</span>개</p>
+                    <p class="sub-text">전체 <span id="totalAllReviews">0</span>개</p>
+                </div>
+                <div class="stat-box">
+                    <h3>평균 평점</h3>
+                    <p id="averageRating">0.0</p>
+                    <p class="sub-text">
+                        <span id="ratingSum">0</span> / <span id="ratingCount">0</span>
+                    </p>
+                </div>
+                <div class="stat-box recommendation-box">
+                    <h3>구매 추천</h3>
+                    <p id="recommendation">-</p>
+                    <div class="recommendation-details">
+                        <div>긍정적: <span id="positivePercent">0%</span></div>
+                        <div>부정적: <span id="negativePercent">0%</span></div>
+                        <div>중립적: <span id="neutralPercent">0%</span></div>
+                    </div>
+                </div>
+                <div class="stat-box">
+                    <h3>제품 정보</h3>
+                    <div class="product-attributes">
+                        <ul id="productAttributes" class="product-attributes-list">
+                            <!-- 여기에 제품 정보가 추가됨 -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-box">
+                    <h3>평점 분포</h3>
+                    <canvas id="ratingChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>리뷰 트렌드</h3>
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 키워드 분석 섹션 추가 -->
+            <div class="analysis-section collapsed">
+                <div class="section-header">
+                    <h3>키워드 분석</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="keyword-analysis">
+                        <div class="keyword-section">
+                            <!--<h4>주요 키워드</h4>-->
+                            <canvas id="keywordTreemap"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 고급 분석 섹션 -->
+            <div class="advanced-analysis">
+                <!-- 리뷰 길이 분포 -->
+                <div class="analysis-section collapsed">
+                    <div class="section-header">
+                        <h3>리뷰 길이 분포</h3>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="review-length-container">
+                            <div class="review-length-chart">
+                                <canvas id="reviewLengthChart"></canvas>
+                            </div>
+                            <div class="review-length-stats">
+                                <div class="length-stat-item">
+                                    <span class="stat-label">짧은 리뷰 (50자 미만):</span>
+                                    <span id="shortReviews" class="stat-value">0개</span>
+                                </div>
+                                <div class="length-stat-item">
+                                    <span class="stat-label">중간 리뷰 (50-200자):</span>
+                                    <span id="mediumReviews" class="stat-value">0개</span>
+                                </div>
+                                <div class="length-stat-item">
+                                    <span class="stat-label">긴 리뷰 (200자 이상):</span>
+                                    <span id="longReviews" class="stat-value">0개</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stats">
+                            <p>평균 길이: <span id="avgLength">0</span>자</p>
+                            <p>최대 길이: <span id="maxLength">0</span>자</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 구매 트렌드 분석 -->
+            <div class="analysis-section collapsed">
+                <div class="section-header">
+                    <h3>구매 트렌드 분석</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="trends-container">
+                        <div class="trend-section">
+                            <h4>계절별 구매 패턴</h4>
+                            <canvas id="seasonalTrendChart"></canvas>
+                        </div>
+                        <div class="trend-section">
+                            <h4>월별 구매 패턴</h4>
+                            <canvas id="monthlyTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 리뷰 진정성 분석 섹션 추가 -->
+            <div class="analysis-section collapsed">
+                <div class="section-header">
+                    <h3>리뷰 진정성 분석</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="authenticity-container">
+                        <div class="authenticity-score">
+                            <div class="score-circle">
+                                <span id="totalAuthenticityScore">0</span>
+                                <span class="score-label">진정성 점수</span>
+                            </div>
+                        </div>
+                        <div class="authenticity-details">
+                            <div class="auth-factor">
+                                <span class="factor-label">구매 인증 리뷰</span>
+                                <div class="progress-bar">
+                                    <div id="verifiedPurchaseBar" class="progress"></div>
+                                </div>
+                                <span id="verifiedPurchasePercent">0%</span>
+                            </div>
+                            <div class="auth-factor">
+                                <span class="factor-label">상세 리뷰</span>
+                                <div class="progress-bar">
+                                    <div id="detailedReviewBar" class="progress"></div>
+                                </div>
+                                <span id="detailedReviewPercent">0%</span>
+                            </div>
+                            <div class="auth-factor">
+                                <span class="factor-label">사진/동영상 첨부</span>
+                                <div class="progress-bar">
+                                    <div id="mediaAttachedBar" class="progress"></div>
+                                </div>
+                                <span id="mediaAttachedPercent">0%</span>
+                            </div>
+                            <div class="auth-factor">
+                                <span class="factor-label">도움이 돼요</span>
+                                <div class="progress-bar">
+                                    <div id="helpfulVotesBar" class="progress"></div>
+                                </div>
+                                <span id="helpfulVotesPercent">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="authenticity-summary">
+                        <h4>진정성 분석 결과</h4>
+                        <p id="authenticityConclusion">분석 결과가 여기에 표시됩니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analysisResult" style="display: none;">
+            <!-- 기존 차트들 -->
+            
+            <!-- 1. 감성 분석 결과 -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>감성 분석</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="sentimentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 2. 월별 평점 추이 -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>월별 평점 추이</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="monthlyRatingChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3. 리뷰 길이 분포 -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>리뷰 길이 분포</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="reviewLengthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 4. 연관어 분석 -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>연관어 네트워크</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="wordNetwork"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 5. 리뷰 요약 -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>주요 리뷰 요약</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="reviewSummary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/script.js"></script>
+</body>
+</html> 
