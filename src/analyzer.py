@@ -33,6 +33,13 @@ class ReviewAnalyzer:
 
     def get_reviews(self, product_id, max_pages=10, progress_callback=None):
         try:
+            # Linux 환경에서 Chrome 설치
+            if platform.system() == "Linux":
+                os.system('wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -')
+                os.system('echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list')
+                os.system('apt-get update')
+                os.system('apt-get install -y google-chrome-stable')
+
             driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=self.chrome_options

@@ -1,2 +1,3 @@
-snapd
-chromium 
+libnss3
+libgconf-2-4
+wget 
