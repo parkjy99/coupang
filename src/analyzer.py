@@ -19,28 +19,18 @@ class ReviewAnalyzer:
         self.chrome_options.add_argument('--no-sandbox')
         self.chrome_options.add_argument('--disable-dev-shm-usage')
         self.chrome_options.add_argument('--disable-gpu')
-        self.chrome_options.add_argument('--window-size=1920x1080')
+        self.chrome_options.add_argument('--start-maximized')
         self.chrome_options.add_argument('--disable-blink-features=AutomationControlled')
         self.chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
         self.chrome_options.add_experimental_option('useAutomationExtension', False)
         self.chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36')
-    
-        # Console 로깅 허용
-        self.chrome_options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
+
     def extract_product_id(self, url):
         match = re.search(r'products/(\d+)', url)
         return match.group(1) if match else None
 
     def get_reviews(self, product_id, max_pages=10, progress_callback=None):
         try:
-            # Linux 환경에서 Chrome 설치
-            if platform.system() == "Linux":
-                self.chrome_options.binary_location = "/usr/bin/chromium"
-                self.chrome_options.add_argument("--no-sandbox")
-                self.chrome_options.add_argument("--disable-dev-shm-usage")
-
-            print(f"상품 ID {product_id}의 리뷰 수집 시작")
-            print(f"요청된 최대 페이지 수: {max_pages}")  # 디버깅 로그
             driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=self.chrome_options
