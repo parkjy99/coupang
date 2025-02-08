@@ -1,9 +1,25 @@
-flask==2.0.1
-flask-cors==3.0.10
-requests==2.26.0
-beautifulsoup4==4.9.3
-pandas==1.3.3
-streamlit==1.22.0
-plotly==5.13.0
-selenium==4.1.0
-webdriver_manager==3.8.0
+# Streamlit
+streamlit==1.30.2 #Streamlit 최신 버전
+# streamlit==1.22.0 #기존 Streamlit 버전 (호환성 문제가 발생할 경우 사용)
+
+# 데이터 처리
+pandas==2.2.0
+numpy==1.26.4
+
+# 시각화
+plotly==5.18.0
+altair==5.2.0
+
+# 웹 요청 (최신 버전 사용)
+requests==2.31.0
+
+# HTML 파싱
+beautifulsoup4==4.12.0
+
+# 기타 (필요한 경우)
+# selenium==4.1.0
+# webdriver_manager==3.8.0
+# flask==2.3.3
+# flask-cors==3.0.10
+python-dateutil==2.9.0
+pytz==2024.1
