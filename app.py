@@ -15,13 +15,6 @@ st.markdown("""
         .stApp {
             background-color: #FFF5F7;
         }
-        .main-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 1rem;
-        }
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -125,12 +118,10 @@ if analyze_button:
                             st.success("분석이 완료되었습니다!")
                             
                             # 제품 정보 표시
-                            st.markdown('<div class="main-container">', unsafe_allow_html=True)
                             if 'product_info' in result:
                                 st.subheader(result['product_info']['title'])
                                 for attr in result['product_info']['attributes']:
                                     st.write(f"• {attr}")
-                            st.markdown('</div>', unsafe_allow_html=True)
 
                             # 통계 정보 계산
                             total_reviews = analysis_result['totalReviews']
