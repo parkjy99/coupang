@@ -25,7 +25,7 @@ class ReviewAnalyzer:
         self.chrome_options.add_experimental_option('useAutomationExtension', False)
         self.chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36')
         if platform.system() == "Linux":
-            self.chrome_options.binary_location = "/usr/bin/chromium-browser"
+            self.chrome_options.binary_location = "/snap/bin/chromium"
 
     def extract_product_id(self, url):
         match = re.search(r'products/(\d+)', url)
