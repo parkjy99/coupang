@@ -178,27 +178,13 @@ if analyze_button:
                                 st.subheader("주요 키워드")
                                 keywords_df = pd.DataFrame(analysis_result['keywords'])
                                 if not keywords_df.empty:
-                                    # 데이터프레임 정렬
-                                    keywords_df = keywords_df.sort_values('count', ascending=True)
+                                    # 상위 15개 키워드만 선택하고 정렬
+                                    keywords_df = keywords_df.nlargest(15, 'count').sort_values('count')
                                     
                                     # 차트 생성
-                                    keyword_chart = alt.Chart(keywords_df).mark_bar(
-                                        color='#B5E5FF',
-                                        cornerRadius=3
-                                    ).encode(
-                                        x=alt.X('count:Q', 
-                                               title='출현 빈도',
-                                               axis=alt.Axis(grid=True)),
-                                        y=alt.Y('word:N', 
-                                               title='키워드',
-                                               sort=None,  # 데이터프레임 정렬 순서 유지
-                                               axis=alt.Axis(labelLimit=150)),  # 긴 키워드도 표시
-                                        tooltip=['word', 'count']
-                                    ).properties(
-                                        height=min(400, len(keywords_df) * 30),  # 키워드 수에 따라 높이 조정
-                                        width=400
-                                    )
-                                    st.altair_chart(keyword_chart, use_container_width=True)
-                                    # 키워드 데이터 표시
-                                    with st.expander("키워드 상세 데이터"):
-                                        st.dataframe(keywords_df.sort_values('count', ascending=False)) 
+                                    keyword_chart = alt.Chart(keywords_df).mark_bar().encode(
+                                        x=alt.X('count:Q', title='출현 빈도'),
+                                        y=alt.Y('word:N', title='키워드', sort='-x'),
+                                        color=alt.value('#B5E5FF')
+                                    ).properties(height=400)
+                                    st.altair_chart(keyword_chart, use_container_width=True) 

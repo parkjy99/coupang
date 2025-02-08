@@ -237,18 +237,15 @@
 <body>
     <div class="container">
         <h1>쿠팡 리뷰 분석기</h1>
-        <div class="input-group">
-            <input type="text" id="urlInput" placeholder="쿠팡 상품 URL을 입력하세요">
-            <select id="pageInput" class="page-select">
-                <option value="5" selected>5페이지</option>
-                <option value="10">10페이지</option>
-                <option value="20">20페이지</option>
-                <option value="30">30페이지</option>
-                <option value="50">50페이지</option>
-                <option value="100">100페이지</option>
-                <option value="1000">1000페이지</option>
-            </select>
-            <button id="analyzeBtn">분석하기</button>
+        <div class="drag-drop-area">
+            <div class="drag-drop-box">
+                <div class="drag-drop-text">
+                    쿠팡 상품 URL을 여기에 드래그하세요
+                </div>
+                <input type="text" class="url-input" name="url" 
+                       placeholder="https://www.coupang.com/vp/products/..." 
+                       value="{{ url }}" />
+            </div>
         </div>
 
         <div id="loading" class="loading hidden">
