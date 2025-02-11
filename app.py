@@ -457,41 +457,80 @@ if analyze_button:
                             with st.expander("리뷰 길이 분포 ▼"):
                                 col1, col2 = st.columns(2)
                                 with col1:
-                                    # 리뷰 길이 히스토그램 데이터 준비
-                                    lengths = [len(r['content']) for r in result['reviews']]
-                                    length_df = pd.DataFrame({'length': lengths})
+                                    # 레이더 차트 데이터 준비
+                                    reviews = result['reviews']
+                                    short = len([r for r in reviews if len(r['content']) < 50])
+                                    medium = len([r for r in reviews if 50 <= len(r['content']) < 200])
+                                    long = len([r for r in reviews if len(r['content']) >= 200])
                                     
-                                    # 히스토그램 차트
-                                    hist = alt.Chart(length_df).mark_bar(
-                                        color='#FFB5C2',
-                                        opacity=0.6
+                                    # 도넛 차트 데이터 준비
+                                    total_reviews = len(reviews)
+                                    donut_data = pd.DataFrame({
+                                        'category': ['50자 미만', '50-200자', '200자 이상'],
+                                        'value': [short, medium, long],
+                                        'percentage': [
+                                            f"{(short/total_reviews)*100:.1f}%",
+                                            f"{(medium/total_reviews)*100:.1f}%",
+                                            f"{(long/total_reviews)*100:.1f}%"
+                                        ]
+                                    })
+                                    
+                                    # 도넛 차트 생성
+                                    donut = alt.Chart(donut_data).mark_arc(
+                                        innerRadius=50,
+                                        color='pink',
+                                        stroke='white',
+                                        strokeWidth=2
                                     ).encode(
-                                        x=alt.X('length:Q',
-                                            bin=alt.Bin(maxbins=30),
-                                            title='리뷰 길이 (글자)'
-                                        ),
-                                        y=alt.Y('count()',
-                                            title='리뷰 수'
+                                        theta=alt.Theta(field="value", type="quantitative"),
+                                        color=alt.Color(
+                                            'category:N',
+                                            scale=alt.Scale(scheme='pastel1'),
+                                            legend=alt.Legend(title='리뷰 길이')
                                         ),
                                         tooltip=[
-                                            alt.Tooltip('length:Q', title='리뷰 길이', bin=True),
-                                            alt.Tooltip('count()', title='리뷰 수')
+                                            alt.Tooltip('category:N', title='구분'),
+                                            alt.Tooltip('value:Q', title='리뷰 수'),
+                                            alt.Tooltip('percentage:N', title='비율')
                                         ]
                                     ).properties(
-                                        height=300,
-                                        title='리뷰 길이 분포'
+                                        width=300,
+                                        height=300
                                     )
                                     
-                                    st.altair_chart(hist, use_container_width=True)
+                                    st.altair_chart(donut, use_container_width=True)
                                 
                                 with col2:
-                                    # 통계 정보 표시
-                                    st.metric("평균 리뷰 길이", 
-                                            f"{sum(len(r['content']) for r in result['reviews']) / len(result['reviews']):.1f}자")
-                                    st.metric("최대 리뷰 길이",
-                                            f"{max(len(r['content']) for r in result['reviews'])}자")
-                                    st.metric("최소 리뷰 길이",
-                                            f"{min(len(r['content']) for r in result['reviews'])}자")
+                                    # 월별 리뷰 길이 분포 차트
+                                    monthly_length = pd.DataFrame([
+                                        {
+                                            'date': pd.to_datetime(r['date']),
+                                            'length': len(r['content'])
+                                        }
+                                        for r in reviews if r['date'] != '날짜 없음'
+                                    ])
+                                    
+                                    if not monthly_length.empty:
+                                        monthly_avg = monthly_length.groupby(
+                                            monthly_length['date'].dt.strftime('%Y-%m')
+                                        )['length'].mean().reset_index()
+                                        
+                                        bar = alt.Chart(monthly_avg).mark_bar(
+                                            color='pink',
+                                            opacity=0.6
+                                        ).encode(
+                                            x=alt.X('date:T', title='월'),
+                                            y=alt.Y('length:Q', title='평균 리뷰 길이'),
+                                            tooltip=[
+                                                alt.Tooltip('date:T', title='월'),
+                                                alt.Tooltip('length:Q', title='평균 길이', format='.1f')
+                                            ]
+                                        ).properties(
+                                            width=400,
+                                            height=300
+                                        )
+                                        
+                                        st.altair_chart(bar, use_container_width=True)
 
                             # 4. 구매 트렌드 분석
                             with st.expander("구매 트렌드 분석 ▼"):
