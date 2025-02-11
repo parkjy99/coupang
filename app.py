@@ -501,73 +501,131 @@ if analyze_button:
                                     st.altair_chart(donut, use_container_width=True)
                                 
                                 with col2:
-                                    # 월별 리뷰 길이 분포 차트
+                                    # 리뷰 길이 분포도 차트
                                     monthly_length = pd.DataFrame([
                                         {
-                                            'date': pd.to_datetime(r['date']),
-                                            'length': len(r['content'])
+                                            'length': len(r['content']),
+                                            'category': '50자 미만' if len(r['content']) < 50 
+                                                       else '50-200자' if len(r['content']) < 200 
+                                                       else '200자 이상'
                                         }
-                                        for r in reviews if r['date'] != '날짜 없음'
+                                        for r in reviews
                                     ])
                                     
                                     if not monthly_length.empty:
-                                        monthly_avg = monthly_length.groupby(
-                                            monthly_length['date'].dt.strftime('%Y-%m')
-                                        )['length'].mean().reset_index()
-                                        
-                                        bar = alt.Chart(monthly_avg).mark_bar(
-                                            color='pink',
-                                            opacity=0.6
+                                        # 히스토그램 차트
+                                        hist = alt.Chart(monthly_length).mark_bar(
+                                            opacity=0.6,
+                                            binSpacing=0
                                         ).encode(
-                                            x=alt.X('date:T', title='월'),
-                                            y=alt.Y('length:Q', title='평균 리뷰 길이'),
+                                            x=alt.X('length:Q',
+                                                bin=alt.Bin(maxbins=30),
+                                                title='리뷰 길이 (글자)'
+                                            ),
+                                            y=alt.Y('count():Q',
+                                                title='리뷰 수',
+                                                stack=None
+                                            ),
+                                            color=alt.Color(
+                                                'category:N',
+                                                scale=alt.Scale(scheme='pastel1'),
+                                                legend=alt.Legend(title='리뷰 길이 구간')
+                                            ),
                                             tooltip=[
-                                                alt.Tooltip('date:T', title='월'),
-                                                alt.Tooltip('length:Q', title='평균 길이', format='.1f')
+                                                alt.Tooltip('length:Q', title='리뷰 길이', bin=True),
+                                                alt.Tooltip('count():Q', title='리뷰 수'),
+                                                alt.Tooltip('category:N', title='구간')
                                             ]
                                         ).properties(
-                                            width=400,
-                                            height=300
+                                            width=500,
+                                            height=300,
+                                            title='리뷰 길이 분포도'
                                         )
                                         
-                                        st.altair_chart(bar, use_container_width=True)
+                                        st.altair_chart(hist, use_container_width=True)
 
                             # 4. 구매 트렌드 분석
                             with st.expander("구매 트렌드 분석 ▼"):
-                                # 유효한 날짜만 필터링하여 월별 데이터 생성
-                                valid_reviews = [
-                                    review for review in result['reviews']
-                                    if review['date'] != '날짜 없음'
-                                ]
+                                col1, col2 = st.columns(2)
                                 
-                                if valid_reviews:
-                                    dates = pd.to_datetime([r['date'] for r in valid_reviews])
-                                    monthly_df = pd.DataFrame({
-                                        'date': dates,
-                                        'count': 1
-                                    })
+                                with col1:
+                                    # 레이더 차트 데이터 준비
+                                    seasons = ['봄', '여름', '가을', '겨울']
+                                    season_data = pd.DataFrame([
+                                        {
+                                            'season': season,
+                                            'value': len([r for r in result['reviews'] 
+                                                if pd.to_datetime(r['date']).month in 
+                                                ([3,4,5] if season == '봄' else
+                                                 [6,7,8] if season == '여름' else
+                                                 [9,10,11] if season == '가을' else
+                                                 [12,1,2])
+                                            ]),
+                                            'angle': i * 2*np.pi/4,
+                                            'x': np.cos(i * 2*np.pi/4),
+                                            'y': np.sin(i * 2*np.pi/4)
+                                        }
+                                        for i, season in enumerate(seasons)
+                                    ])
                                     
-                                    # 월별 집계
-                                    monthly_counts = monthly_df.groupby(monthly_df['date'].dt.month)['count'].sum().reset_index()
-                                    monthly_counts['month'] = monthly_counts['date'].map({
-                                        1:'1월', 2:'2월', 3:'3월', 4:'4월', 5:'5월', 6:'6월',
-                                        7:'7월', 8:'8월', 9:'9월', 10:'10월', 11:'11월', 12:'12월'
-                                    })
-                                    
-                                    # 막대 차트
-                                    bar = alt.Chart(monthly_counts).mark_bar(
-                                        color='#FFB5C2'
+                                    # 레이더 차트 생성
+                                    radar = alt.Chart(season_data).mark_line(
+                                        color='pink',
+                                        strokeWidth=2,
+                                        filled=True,
+                                        fillOpacity=0.3
                                     ).encode(
-                                        x=alt.X('month:N', title='월', sort=None),
-                                        y=alt.Y('count:Q', title='리뷰 수'),
+                                        x=alt.X('x:Q', scale=alt.Scale(domain=[-1, 1])),
+                                        y=alt.Y('y:Q', scale=alt.Scale(domain=[-1, 1])),
+                                        order='angle:Q',
                                         tooltip=[
-                                            alt.Tooltip('month:N', title='월'),
-                                            alt.Tooltip('count:Q', title='리뷰 수')
+                                            alt.Tooltip('season:N', title='계절'),
+                                            alt.Tooltip('value:Q', title='리뷰 수')
                                         ]
                                     ).properties(
-                                        title='월별 리뷰 수',
-                                        width=600,
-                                        height=300
+                                        width=300,
+                                        height=300,
+                                        title='계절별 리뷰 분포'
                                     )
                                     
-                                    st.altair_chart(bar, use_container_width=True) 
+                                    st.altair_chart(radar, use_container_width=True)
+                                
+                                with col2:
+                                    # 유효한 날짜만 필터링하여 월별 데이터 생성
+                                    valid_reviews = [
+                                        review for review in result['reviews']
+                                        if review['date'] != '날짜 없음'
+                                    ]
+                                    
+                                    if valid_reviews:
+                                        dates = pd.to_datetime([r['date'] for r in valid_reviews])
+                                        monthly_df = pd.DataFrame({
+                                            'date': dates,
+                                            'count': 1
+                                        })
+                                        
+                                        # 월별 집계
+                                        monthly_counts = monthly_df.groupby(monthly_df['date'].dt.month)['count'].sum().reset_index()
+                                        monthly_counts['month'] = monthly_counts['date'].map({
+                                            1:'1월', 2:'2월', 3:'3월', 4:'4월', 5:'5월', 6:'6월',
+                                            7:'7월', 8:'8월', 9:'9월', 10:'10월', 11:'11월', 12:'12월'
+                                        })
+                                        
+                                        # 막대 차트
+                                        bar = alt.Chart(monthly_counts).mark_bar(
+                                            color='pink',
+                                            opacity=0.6
+                                        ).encode(
+                                            x=alt.X('month:N', title='월', sort=None),
+                                            y=alt.Y('count:Q', title='리뷰 수'),
+                                            tooltip=[
+                                                alt.Tooltip('month:N', title='월'),
+                                                alt.Tooltip('count:Q', title='리뷰 수')
+                                            ]
+                                        ).properties(
+                                            title='월별 구매 트렌드',
+                                            width=600,
+                                            height=300
+                                        )
+                                        
+                                        st.altair_chart(bar, use_container_width=True) 
