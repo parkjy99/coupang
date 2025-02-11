@@ -378,6 +378,13 @@ if analyze_button:
                             # 2. 키워드 트리맵 (전체 너비 사용)
                             st.subheader("주요 키워드 분석")
                             keywords_df = pd.DataFrame(analysis_result['keywords'])
+                            
+                            # 데이터 확인
+                            if keywords_df.empty:
+                                st.warning("추출된 키워드가 없습니다.")
+                            elif keywords_df['word'].isna().any() or (keywords_df['word'] == 'undefined').any():
+                                st.warning("키워드 데이터에 문제가 있습니다. analyzer.py를 확인해주세요.")
+                            
                             if not keywords_df.empty:
                                 # 상위 20개 키워드 선택
                                 top_keywords = keywords_df.nlargest(20, 'count')
@@ -396,7 +403,7 @@ if analyze_button:
                                     y=alt.Y('row:O', axis=None),
                                     color=alt.Color(
                                         'count:Q',
-                                        scale=alt.Scale(scheme='yelloworangered'),
+                                        scale=alt.Scale(scheme='lightgreyred'),  # 더 밝은 색상으로 변경
                                         legend=alt.Legend(title='출현 빈도')
                                     ),
                                     tooltip=[
@@ -412,21 +419,35 @@ if analyze_button:
                                 rect = base.mark_rect(
                                     stroke='white',
                                     strokeWidth=2,
-                                    opacity=0.8
+                                    opacity=0.4  # 배경을 더 투명하게
                                 )
                                 
                                 # 키워드 텍스트 추가
                                 text = base.mark_text(
                                     align='center',
                                     baseline='middle',
-                                    fontSize=14,
-                                    color='white'
+                                    fontSize=16,
+                                    color='#000000',
+                                    fontWeight=900,  # 텍스트를 더 진하게
+                                    dy=-8
                                 ).encode(
-                                    text='word:N'
+                                    text=alt.Text('word:N')
+                                )
+                                
+                                # 횟수 텍스트 추가
+                                count_text = base.mark_text(
+                                    align='center',
+                                    baseline='middle',
+                                    fontSize=14,
+                                    color='#000000',
+                                    fontWeight=700,  # 횟수도 진하게
+                                    dy=8
+                                ).encode(
+                                    text=alt.Text('count:Q', format=',d')
                                 )
                                 
                                 # 차트 결합
-                                final_chart = (rect + text).configure_view(
+                                final_chart = (rect + text + count_text).configure_view(
                                     strokeWidth=0
                                 )
                                 
